@@ -2,6 +2,8 @@
 
 import numpy as np
 import random as r
+from collections import deque
+import math
 
 class Robot:
     def __init__(self, startX, startY, goalX, goalY, n_matrix):
@@ -50,20 +52,46 @@ class Robot:
 
     def __str__(self):
         return("This bot's position is [" + str(startX) + "," + str(startY) + "]")
+
+    def get_distance(self):
+        self.dist = math.sqrt((self.startX-self.goalX)**2+(self.startY-self.goalY)**2)
+        return self.dist
         
 
 
 class Humanoid(Robot):
     def __init__(self, startX, startY, goalX, goalY, n_matrix):
         super().__init__(startX, startY, goalX, goalY, n_matrix)
+        self.startX = startX
+        self.startY = startY
+        self.goalX = goalX
+        self.goalY = goalY
+        self.n_matrix = n_matrix
+
+    def __str__(self):
+        return ("Humanoid that starts at " + str(self.startX) + "," + str(self.startY) + " and goes to " + str(self.goalX) + "," + str(self.goalY))
 
 class DifferentialDrive(Robot):
     def __init__(self, startX, startY, goalX, goalY, n_matrix):
         super().__init__(startX, startY, goalX, goalY, n_matrix)
+        self.startX = startX
+        self.startY = startY
+        self.goalX = goalX
+        self.goalY = goalY
+
+    def __str__(self):
+        return ("Differential Drive that starts at " + str(self.startX) + "," + str(self.startY) + " and goes to " + str(self.goalX) + "," + str(self.goalY))
 
 class Quadrotor(Robot):
     def __init__(self, startX, startY, goalX, goalY, n_matrix):
         super().__init__(startX, startY, goalX, goalY, n_matrix)
+        self.startX = startX
+        self.startY = startY
+        self.goalX = goalX
+        self.goalY = goalY
+
+    def __str__(self):
+        return ("Quadrotor that starts at " + str(self.startX) + "," + str(self.startY) + " and goes to " + str(self.goalX) + "," + str(self.goalY))
 
 class Grid:
     def __init__(self, size):
@@ -100,27 +128,44 @@ if __name__ == "__main__":
 
     grid = Grid(num)
 
+    # 2d list with the type of bot, and then it's distance to goal
     bots = []
     
     # Creates bots based on input value, randomly creates start and goal locations, adds them to Grid
+    nums = list(range(0,num*2))
+    r.shuffle(nums)
+    print(nums)
+    nums1 = list(range(0,num*2))
+    r.shuffle(nums1)
+    nums2 = list(range(0,num*2))
+    r.shuffle(nums2)
+    nums3 = list(range(0,num*2))
+    r.shuffle(nums3)
     for i in range(0,num*2):
         bot = r.randint(1,3)
-        startX = r.randint(0,num)
-        startY = r.randint(0,num)
-        goalX = r.randint(0,num)
-        goalY = r.randint(0,num)
+        startX = nums[i]
+        startY = nums1[i]
+        goalX = nums2[i]
+        goalY = nums3[i]
         if bot == 1:
             h = Humanoid(startX, startY, goalX, goalY, num)
-            bots.append(h)
+            bots.append([h, h.get_distance()])
         elif bot ==2:
             d = DifferentialDrive(startX, startY, goalX, goalY, num)
-            bots.append(d)
+            bots.append([d, d.get_distance()])
         else:
             q = Quadrotor(startX, startY, goalX, goalY, num)
-            bots.append(q)
+            bots.append([q, q.get_distance()])
 
-    for i in range(0, num*2):
-        print(str(bots[i]))
+    sorted_bots = sorted(bots, key=lambda x: x[1], reverse=True)
+
+    #test sorted list
+    print(sorted_bots[0][1])
+    print(sorted_bots[1][1])
+    print(sorted_bots[2][1])
+
+    
+    
 
 
         
