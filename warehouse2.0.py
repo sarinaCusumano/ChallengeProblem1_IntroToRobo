@@ -9,6 +9,9 @@ import numpy as np
 import queue
 import random
 import matplotlib.pyplot as plt
+from collections import OrderedDict
+
+from Conflict_Resolution import conflict_resolution
 
 
 # Generic Robot class containing core functionality
@@ -249,34 +252,43 @@ class Grid:
     # Intentions --> conflict resolution --> move
     # ============================
 
-    def collect_intentions(self):
-        """
-        Build a mapping of intended one-step moves for all robots:
-        - For each robot, call findMoveCandidates() and choose a single target on the shortest path.
-        - Group by target cell; respect Node.valid_add for compatibility.
-        """
-        #get list of next position
+    def collect_reservations(self):
         reservation_list = []
-        for robot in list(self.robotQueue.queue):
-            robo_dict = {"robot": , "reservation": }
-            # append a list of dictionaries
+        for robot in sorted(self.robotQueue.queue):  # preserve Q order
+            robo_dict = {"robot": robot, "reservation_pos": robot.findMoveCandidates()}
             reservation_list.append(robo_dict)
 
+        # two different ordered dictionaries
+        primary_dict = OrderedDict()
+        secondary_dict = OrderedDict()
 
+        for entry in reservation_list:  # already in priority order
+            robot = entry["robot"]
+            cands = entry["reservation_pos"]
 
-        pass  #remove when function completed
+            if not cands:
+                # stay in place if no candidates
+                primary_dict[robot] = (robot.get_x(), robot.get_y())
+                secondary_dict[robot] = []
+            else:
+                # first candidate = primary
+                first = tuple(cands[0])
+                rest = [tuple(c) for c in cands[1:]]
+                primary_dict[robot] = first
+                secondary_dict[robot] = rest
 
-    def resolve_conflicts(self, intentions):
+        return primary_dict, secondary_dict
+
+    def resolve_conflicts(self, reservations_primary, reservations_secondary):
         """
         intentions: dict mapping target_pos (x, y) -> list of Robot objects
           Robot API used: getType() in {'q','d','h'}, get_x(), get_y(), robot_id, potential[y][x]
 
         Returns:
-          dict {winner_id: target_pos}
-          - For each target cell, resolve AIR ('q') and GROUND ('h','d') independently.
-          - Winner rule: greater remaining distance (from potential at current cell);
-            on tie, keep the second argument.
+          dict {winner_id: target_pos}, list [loser_ids]
         """
+        winners = {}
+        losers = []
 
         # remaining distance from potential field at current position
         def dist(r):
@@ -294,50 +306,130 @@ class Grid:
                     return r1.robot_id if dist(r1) > dist(r2) else r2.robot_id
                 case ('d', 'h') | ('h', 'd'):
                     return r1.robot_id if dist(r1) > dist(r2) else r2.robot_id
-                # Cross-layer (q with d/h) is "no conflict" and won’t appear in a same-layer bucket,
-                # but keep a default for safety:
-                case _:
+                case ('q', 'h') | ('h', 'q'):
+                    return 0
+                case ('q', 'd') | ('d', 'q'):
                     return 0
 
-        winners = {}
+        # regroup reservations_primary
+        pos_to_robots_dict = OrderedDict()
+        for robot, pos in reservations_primary.items():
+            pos_to_robots_dict.setdefault(pos, []).append(robot)
 
-        for target_pos, contenders in intentions.items():
-            # Split contenders by layer
-            air = [r for r in contenders if r.getType() == 'q']
-            ground = [r for r in contenders if r.getType() in ('h', 'd')]
+        # ---- primary resolution  ----
+        for target_pos, contenders in pos_to_robots_dict.items():  # now contenders is a list of Robots
+            n = len(contenders)
+            if n == 0:
+                continue
+            elif n == 1:
+                winners[contenders[0].robot_id] = target_pos
+            elif n == 2:
+                rid = conflict_resolution(contenders[0], contenders[1])
+                if rid == 0:  # no conflict → both can go
+                    for r in contenders:
+                        winners[r.robot_id] = target_pos
+                else:
+                    winners[rid] = target_pos
+                    for r in contenders:
+                        if r.robot_id != rid:
+                            losers.append(r.robot_id)
+            else:
+                current = contenders[0]
+                for r in contenders[1:]:
+                    rid = conflict_resolution(current, r)
+                    if rid == 0:
+                        winners[current.robot_id] = target_pos
+                        winners[r.robot_id] = target_pos
+                    elif rid == r.robot_id:
+                        losers.append(current.robot_id)
+                        current = r
+                    else:
+                        losers.append(r.robot_id)
+                if current.robot_id not in winners:
+                    winners[current.robot_id] = target_pos
 
-            # AIR: resolve q vs q
-            if air:
-                win = air[0]
-                for r in air[1:]:
-                    res_id = conflict_resolution(win, r)
-                    if res_id == r.robot_id:
-                        win = r
-                winners[win.robot_id] = target_pos
+        # ---- secondary pass: let losers try their alternates if OPEN  ----
+        used_positions = set(winners.values())
 
-            # GROUND: resolve among h/d using the same match-case
-            if ground:
-                win = ground[0]
-                for r in ground[1:]:
-                    res_id = conflict_resolution(win, r)
-                    if res_id == r.robot_id:
-                        win = r
-                winners[win.robot_id] = target_pos
+        # keep only secondary entries for robots that lost; preserve order
+        from collections import OrderedDict
+        filtered_secondary = OrderedDict(
+            (robot, positions)
+            for robot, positions in reservations_secondary.items()
+            if robot.robot_id in losers
+        )
 
-        #list of dictionaries
-        return winners
+        remaining_losers = []
+        for robot, alt_positions in filtered_secondary.items():
+            rid = robot.robot_id
 
-    def apply_moves(self, winners):
+            # if this robot already got a primary win skip
+            if rid in winners:
+                continue
+
+            placed = False
+            # normalize any [x,y] to (x,y)
+            for pos in (tuple(p) for p in alt_positions):
+                if pos not in used_positions:
+                    winners[rid] = pos  # assign exactly one new space
+                    used_positions.add(pos)
+                    placed = True
+                    break
+
+            if not placed:
+                remaining_losers.append(rid)
+
+        return winners, remaining_losers
+
+    def apply_moves(self, winners, losers):
         """
-        Apply all winning moves simultaneously:
-        - For each winner, remove from current Node and add to target Node.
-        - Update robot (x, y).
+        winners: dict {robot_id -> (x, y)}
+        losers:  list [robot_id, ...]
         """
-        #take a list of dictionary arguments from intentions list({winning robot ID: target_Pos}, ...)
-        #Loop for all robots: remove winning robot by ID from current spot and update new spot
-        pass  #remove when function completed
+        robots = list(self.robotQueue.queue)
+        by_id = {r.robot_id: r for r in robots}
 
-    def timestep(self):
+        completed_ids = set()
+
+        # Apply winning moves
+        for rid, (nx, ny) in winners.items():
+            r = by_id.get(rid) #get ID
+            ox, oy = r.get_x(), r.get_y() #get old position
+
+            # remove from old node if present
+            try:
+                self.nodes[oy][ox].remove_robot(r) #remove robot from old node
+            except ValueError:
+                pass
+
+            # If this move reaches the goal, do NOT add back to any node
+            if (nx, ny) == (r.get_goal_x(), r.get_goal_y()):
+                r.set_x(nx);
+                r.set_y(ny)
+                completed_ids.add(rid)
+                continue
+
+            # otherwise place at new node and update coords
+            self.nodes[ny][nx].add_robot(r)
+            r.set_x(nx);
+            r.set_y(ny)
+
+        #Recompute distances
+        for r in robots:
+            # skip completed robots: they’re off the board
+            if r.robot_id in completed_ids:
+                continue
+            r.distance = r.potential[r.get_y()][r.get_x()]
+
+        #Rebuild the priority queue with only non-completed robots
+        new_q = queue.PriorityQueue()
+        for r in robots:
+            if r.robot_id not in completed_ids:
+                new_q.put(r)
+        self.robotQueue = new_q
+
+
+    def timestep(self, n):
         """
         One global plan-then-move tick:
         - intentions = collect_intentions()
@@ -347,22 +439,29 @@ class Grid:
         - apply_moves(winners)
         """
         #Call collect intentions
+        reservation_dict_primary, reservation_dict_secondary = self.collect_reservations()
         #Resolve conflict
+        winners, losers = self.resolve_conflicts(reservation_dict_primary, reservation_dict_secondary)
         #apply moves (only with final list)
+        self.apply_moves(winners, losers)
         #visualize to show graph with current time step
-        myGrid.visualize()
-        pass  #remove when function completed
+        myGrid.visualize(n)
 
-    # (Optional) run loop; leave as outline per instructions
+
+    # run loop; leave as outline per instructions
     def run_until_done(self):
         """
         Repeat timestep() until all robots reach their goals.
         """
         #while robots on grid - run timestep
+        n = 0
+        while not self.robotQueue.empty():
+            self.timestep(n)
+            n += 1
 
-        pass  #remove when function completed
 
-    def visualize(self):
+
+    def visualize(self, n):
 
         type_color = {'q': 'tab:red', 'd': 'tab:green', 'h': 'tab:blue'}
         type_marker = {'q': 'X', 'd': '^', 'h': 'o'}
@@ -382,7 +481,7 @@ class Grid:
             plt.plot(x_coords[1], y_coords[1], m, color='gold')
 
 
-        plt.title("Robot Grid Navigation") # Added Title - Needs to be updated with timestep number
+        plt.title("Robot Grid Navigation - timestep ", n) # Added Title - updated with timestep number
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
         plt.xticks(range(-1, self.n))
@@ -394,4 +493,4 @@ class Grid:
 
 
 myGrid = Grid(5)
-#run_until_done()
+myGrid.run_until_done()
