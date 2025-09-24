@@ -405,14 +405,14 @@ class Grid:
 
             # If this move reaches the goal, do NOT add back to any node
             if (nx, ny) == (r.get_goal_x(), r.get_goal_y()):
-                r.set_x(nx);
+                r.set_x(nx)
                 r.set_y(ny)
                 completed_ids.add(rid)
                 continue
 
             # otherwise place at new node and update coords
             self.nodes[ny][nx].add_robot(r)
-            r.set_x(nx);
+            r.set_x(nx)
             r.set_y(ny)
 
         #Recompute distances
@@ -482,7 +482,7 @@ class Grid:
             plt.plot(x_coords[1], y_coords[1], m, color='gold')
 
 
-        plt.title("Robot Grid Navigation - timestep ", n) # Added Title - updated with timestep number
+        plt.title("Robot Grid Navigation - timestep " + str(n)) # Added Title - updated with timestep number
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
         plt.xticks(range(-1, self.n))
