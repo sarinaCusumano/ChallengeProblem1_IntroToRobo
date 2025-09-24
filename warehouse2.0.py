@@ -290,6 +290,7 @@ class Grid:
         winners = {}
         losers = []
 
+
         # remaining distance from potential field at current position
         def dist(r):
             return r.potential[r.get_y()][r.get_x()]
@@ -311,8 +312,8 @@ class Grid:
                 case ('q', 'd') | ('d', 'q'):
                     return 0
 
-        # regroup reservations_primary
         pos_to_robots_dict = OrderedDict()
+        # regroup reservations_primary
         for robot, pos in reservations_primary.items():
             pos_to_robots_dict.setdefault(pos, []).append(robot)
 
@@ -352,7 +353,7 @@ class Grid:
         used_positions = set(winners.values())
 
         # keep only secondary entries for robots that lost; preserve order
-        from collections import OrderedDict
+
         filtered_secondary = OrderedDict(
             (robot, positions)
             for robot, positions in reservations_secondary.items()
