@@ -71,6 +71,8 @@ class Robot:
     def findMoveCandidates(self):
         # The goal of this function is to determine the coordinates of neighbors lying on a shortest path
         # Implementation is pretty simple, we just need to check left, right, up, down
+
+        #CHANGE TO WORK FUNCTIONALITY
         l_x = self.x - 1
         r_x = self.x + 1
         u_y = self.y - 1
@@ -180,6 +182,10 @@ class Node:
 
 class Grid:
 
+    #List of robot objects
+    #List of dictinary values
+
+
     def __init__(self, n):
         # In order to set up our grid, we need to do the following:
         #       Create an nxn matrix of nodes
@@ -249,6 +255,14 @@ class Grid:
         - For each robot, call findMoveCandidates() and choose a single target on the shortest path.
         - Group by target cell; respect Node.valid_add for compatibility.
         """
+        #get list of next position
+        reservation_list = []
+        for robot in list(self.robotQueue.queue):
+            robo_dict = {"robot": , "reservation": }
+            # append a list of dictionaries
+            reservation_list.append(robo_dict)
+
+
 
         pass  #remove when function completed
 
@@ -310,6 +324,7 @@ class Grid:
                         win = r
                 winners[win.robot_id] = target_pos
 
+        #list of dictionaries
         return winners
 
     def apply_moves(self, winners):
@@ -318,8 +333,7 @@ class Grid:
         - For each winner, remove from current Node and add to target Node.
         - Update robot (x, y).
         """
-        #take a dictionary argument from intentions without multiple robots per spot?? {winning robot ID: target_Pos}
-        #take a dictionary argument from resolve_conflicts with {winning robot ID: target_Pos}
+        #take a list of dictionary arguments from intentions list({winning robot ID: target_Pos}, ...)
         #Loop for all robots: remove winning robot by ID from current spot and update new spot
         pass  #remove when function completed
 
@@ -327,11 +341,16 @@ class Grid:
         """
         One global plan-then-move tick:
         - intentions = collect_intentions()
-            -if any robots intend to go to a space without any conflicts --> straight to apply moves with {robot_ID: target_Pos}
+            -if any robots intend to go to a space without any conflicts
             -send the rest to conflict_resolution
         - winners = resolve_conflicts(intentions)
         - apply_moves(winners)
         """
+        #Call collect intentions
+        #Resolve conflict
+        #apply moves (only with final list)
+        #visualize to show graph with current time step
+        myGrid.visualize()
         pass  #remove when function completed
 
     # (Optional) run loop; leave as outline per instructions
@@ -339,6 +358,8 @@ class Grid:
         """
         Repeat timestep() until all robots reach their goals.
         """
+        #while robots on grid - run timestep
+
         pass  #remove when function completed
 
     def visualize(self):
@@ -361,7 +382,7 @@ class Grid:
             plt.plot(x_coords[1], y_coords[1], m, color='gold')
 
 
-        plt.title("Robot Grid Navigation") # Added Title
+        plt.title("Robot Grid Navigation") # Added Title - Needs to be updated with timestep number
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
         plt.xticks(range(-1, self.n))
@@ -371,6 +392,6 @@ class Grid:
         plt.savefig("warehouse.png", dpi=200, bbox_inches="tight")
         plt.show()
 
-# Example usage
+
 myGrid = Grid(5)
-myGrid.visualize()
+#run_until_done()
