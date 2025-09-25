@@ -489,13 +489,13 @@ class Grid:
         plt.title("Robot Grid Navigation - timestep " + str(n)) # Added Title - updated with timestep number
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.grid(True)
-        plt.xticks(range(-1, self.n))
-        plt.yticks(range(-1, self.n))
+        plt.xticks(range(self.n))
+        plt.yticks(range(self.n))
         plt.axis('equal')
         plt.tight_layout(rect=[0.0, 0.0, 1.0, 1.0])  # leave extra space on the right for the legend
         #plt.savefig("warehouse.png", dpi=200, bbox_inches="tight")
-        plt.xlim(-1, 5)
-        plt.ylim(-1, 5)
+        plt.xlim(-1, self.n)
+        plt.ylim(-1, self.n)
         plt.show(block=False)
         plt.pause(3)
         plt.close()
