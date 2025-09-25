@@ -443,10 +443,11 @@ class Grid:
         reservation_dict_primary, reservation_dict_secondary = self.collect_reservations()
         #Resolve conflict
         winners, losers = self.resolve_conflicts(reservation_dict_primary, reservation_dict_secondary)
+        # visualize to show graph with current time step
+        myGrid.visualize(n)
         #apply moves (only with final list)
         self.apply_moves(winners, losers)
-        #visualize to show graph with current time step
-        myGrid.visualize(n)
+
 
 
     # run loop; leave as outline per instructions
@@ -454,12 +455,15 @@ class Grid:
         """
         Repeat timestep() until all robots reach their goals.
         """
+
         #while robots on grid - run timestep
         n = 0
         while not self.robotQueue.empty():
             self.timestep(n)
             n += 1
 
+        # visualize to show graph with current time step
+        myGrid.visualize(n)
 
 
     def visualize(self, n):
@@ -489,8 +493,13 @@ class Grid:
         plt.yticks(range(-1, self.n))
         plt.axis('equal')
         plt.tight_layout(rect=[0.0, 0.0, 1.0, 1.0])  # leave extra space on the right for the legend
-        plt.savefig("warehouse.png", dpi=200, bbox_inches="tight")
-        plt.show()
+        #plt.savefig("warehouse.png", dpi=200, bbox_inches="tight")
+        plt.xlim(-1, 5)
+        plt.ylim(-1, 5)
+        plt.show(block=False)
+        plt.pause(3)
+        plt.close()
+
 
 
 myGrid = Grid(5)
