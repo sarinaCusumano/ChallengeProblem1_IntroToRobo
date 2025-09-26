@@ -181,7 +181,7 @@ class Node:
     def valid_add(self, robo):
         # CHANGED: check incompatibility in both directions using robot.getType()
         for robot in self.occupancy:
-            if robot.getType() in robo.incompatible or robo.getType() in robot.incompatible:
+            if robot.getType() in self.incompatible or self.getType() in robot.incompatible:
                 return False
         return True
 
