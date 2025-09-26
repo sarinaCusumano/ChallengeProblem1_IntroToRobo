@@ -1,13 +1,15 @@
 #################################################################################################################################
 ### ROBO 5000 : Introduction to Robotics
 ### Challenge Problem 1: Robot Warehouse Management
-### Authors:
+### Authors: Marc Friedman, Joseph Hanley, Sarina Cusumano
 #################################################################################################################################
 
 # Import required packages
 import numpy as np
 import queue
 import random
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
@@ -37,6 +39,7 @@ class Robot:
         matrix[self.goal_y][self.goal_x] = 0
         points.put((self.goal_x, self.goal_y))
         # Effectively run BFS on the matrix, calculating each node's distance from the goal
+        # 
         while not points.empty():
             # Dequeue the first element and explore valid neighbors
             curr = points.get()
@@ -86,12 +89,12 @@ class Robot:
         if l_x >= 0:
             if self.potential[self.y][l_x] < current_value:
                 candidateMoves.append([l_x, self.y])
-        if r_x < self.matrixSize:
-            if self.potential[self.y][r_x] < current_value:
-                candidateMoves.append([r_x, self.y])
         if u_y >= 0:
             if self.potential[u_y][self.x] < current_value:
                 candidateMoves.append([self.x, u_y])
+        if r_x < self.matrixSize:
+            if self.potential[self.y][r_x] < current_value:
+                candidateMoves.append([r_x, self.y])
         if d_y < self.matrixSize:
             if self.potential[d_y][self.x] < current_value:
                 candidateMoves.append([self.x, d_y])
