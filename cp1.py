@@ -470,7 +470,7 @@ class Grid:
 
 
     def visualize(self, n):
-
+        plt.clf()
         type_color = {'q': 'tab:red', 'd': 'tab:green', 'h': 'tab:blue'}
         type_marker = {'q': 'X', 'd': '^', 'h': 'o'}
         type_label = {'q': 'Quadrotor', 'd': 'DifferentialDrive', 'h': 'Humanoid'}
@@ -496,12 +496,10 @@ class Grid:
         plt.yticks(range(self.n))
         plt.axis('equal')
         plt.tight_layout(rect=[0.0, 0.0, 1.0, 1.0])  # leave extra space on the right for the legend
-        #plt.savefig("warehouse.png", dpi=200, bbox_inches="tight")
         plt.xlim(-1, self.n)
         plt.ylim(-1, self.n)
-        plt.show(block=False)
-        plt.pause(3)
-        plt.close()
+        plt.draw()  # redraws current figure
+        plt.pause(3)  # keeps 3-second delay
 
 
 
