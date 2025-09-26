@@ -502,5 +502,6 @@ class Grid:
 
 
 
-myGrid = Grid(5)
+
+myGrid = Grid(int(input("Enter a grid nxn value. n= ")))
 myGrid.run_until_done()
