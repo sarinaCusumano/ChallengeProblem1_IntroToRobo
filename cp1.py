@@ -587,5 +587,14 @@ class Grid:
 
 
 # receive user input for nxn grid value, then run program
-myGrid = Grid(int(input("Enter a grid nxn value. n = ")))
+
+while True:
+    try:
+        n = int(input("Enter a grid nxn value. n = "))
+        if 3 <= n <= 10:
+            break
+        print("n must be at least 3 and at most 10, please try again.")
+    except ValueError:
+        print("Please enter an integer.")
+myGrid = Grid(n)
 myGrid.run_until_done()
